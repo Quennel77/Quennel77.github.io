@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>熊貓外送倍率計算</title>
+<style>
+/* === 整體暗黑模式 === */
+body {
+  font-family: Arial, sans-serif;
+  margin: 40px;
+  background: #121212;
+  color: #eee;
+}
+.container {
+  max-width: 500px;
+  margin: auto;
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 22px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #eee;
+}
+label { display: block; margin-top: 10px; font-weight: bold; color: #eee; }
+.input-group { display: flex; margin: 10px 0; }
+input { width: calc(100% - 50px); padding: 10px; font-size: 16px; background: #2a2a2a; color: #eee; border: 1px solid #555; border-radius: 6px; }
+
+/* 統一 +、-、重置樣式 */
+.inc-btn, .dec-btn, .reset-btn {
+  width: 60px;
+  height: 60px;
+  font-size: 26px;
+  margin-left: 5px;
+  border: none;
+  border-radius: 8px;
+  background: #ff69b4;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, background 0.2s;
+}
+.inc-btn:hover, .dec-btn:hover, .reset-btn:hover {
+  background: #005fa3;
+  transform: rotate(20deg);
+}
+
+.result { margin-top: 15px; font-size: 28px; text-align: center; font-weight: bold; }
+#amount { color: red; width: 180px; font-size: 22px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #ff5555; }
+
+#formula { margin-top: 15px; font-size: 16px; color: #eee; line-height: 1.5; white-space: pre-line; text-align: center; }
+#oldFormula {
+  margin-top: 2px;
+  font-size: 16px;
+  color: #eee;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: center;
+}
+#errorMsg { color:red; margin-bottom:10px; font-weight:bold; }
+
+body, input, button { touch-action: manipulation; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+
+/* 隱藏數字輸入框的上下箭頭 */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* 取消按鈕按下動畫 */
+button, .calc-btn, .reset-btn { transition: none !important; transform: none !important; }
+button:active, .calc-btn:active, .reset-btn:active { transform: none !important; scale: 1 !important; }
+
+/* 取單率區塊背景暗黑化 */
+.order-block { max-width:300px; margin:20px auto; font-size:16px; font-family:Arial, sans-serif; color:#eee; }
+.order-block input { background:#2a2a2a; color:#eee; border:1px solid #555; }
+.order-block span { color:#ccc; }
+.order-block button { background:#0078d7; color:#fff; }
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h2>
+    熊貓外送倍率里程計算
+    <button class="reset-btn" onclick="resetValues()">🔄</button>
+  </h2>
+
+  <label>當時倍率：</label>
+  <div class="input-group">
+    <input type="number" id="yVal" value="1.4" step="0.1" oninput="calc()">
+    <button class="inc-btn" onclick="change('yVal', 0.1)">+</button>
+    <button class="dec-btn" onclick="change('yVal', -0.1)">-</button>
+  </div>
+  
+  <label>總公里數：</label>
+  <div class="input-group">
+    <input type="number" id="xVal" value="2.5" step="0.1" oninput="calc()">
+    <button class="inc-btn" onclick="change('xVal', 0.1)">+</button>
+    <button class="dec-btn" onclick="change('xVal', -0.1)">-</button>
+  </div>
+
+  <div id="errorMsg"></div>
+
+  <div id="formula">公式區顯示</div>
+
+  <div class="result">
+    <input type="number" id="amount" value="" step="0.01" placeholder="輸入金額可反算" /> 元
+    <div id="oldFormula"></div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_X = 2.5;
+const DEFAULT_Y = 1.4;
+
+function change(id, delta) {
+  const input = document.getElementById(id);
+  let value = parseFloat(input.value) || 0;
+  value += delta;
+  input.value = (Math.round(value * 10) / 10).toFixed(1);
+  calc();
+}
+
+function showError(msg) {
+  document.getElementById('errorMsg').innerText = msg || '';
+}
+
+function calc() {
+  const xRaw = document.getElementById('xVal').value;
+  const yRaw = document.getElementById('yVal').value;
+  const x = parseFloat(xRaw);
+  const y = parseFloat(yRaw);
+  const amountInput = document.getElementById('amount');
+
+  if (isNaN(x) || isNaN(y)) { showError(''); return; } else { showError(''); }
+
+  const result = (30 + ((x - 2.5) * 15)) * y;
+  if (!(document.activeElement && document.activeElement.id==='amount')) {
+    amountInput.value = result.toFixed(2);
+  }
+  updateFormula(x, y);
+}
+
+function updateFormula(x, y) {
+  const kmCalc = ((x - 2.5) * 15).toFixed(2);
+  const oldBase = 40;
+  const oldResult = (oldBase + parseFloat(kmCalc)).toFixed(2);
+  const oldResultRush = (parseFloat(oldResult) + 2).toFixed(2);
+
+  const newAmount = (30 + ((x - 2.5) * 15)) * y;
+  const diffNormal = (newAmount - oldResult).toFixed(2);
+  const diffRush = (newAmount - oldResultRush).toFixed(2);
+
+  const formulaText = 
+`20(配送費)+5(安全獎勵)+5(廣告費)
+30 + (( ${x.toFixed(4)} - 2.5 ) × 15 = ${kmCalc} 元) × ${y.toFixed(1)}(倍率)`;
+
+  const oldFormulaText = `
+舊制算法：<br>
+非餐期 40 + ${kmCalc} = <span style="color:#a00; font-weight:bold;">${oldResult} 元</span> (差 ${diffNormal} 元)<br>
+餐期 +2 → <span style="color:#a00; font-weight:bold;">${oldResultRush} 元</span> (差 ${diffRush} 元)
+`;
+
+  document.getElementById('formula').innerText = formulaText;
+  document.getElementById('oldFormula').innerHTML = oldFormulaText;
+}
+
+document.getElementById('amount').addEventListener('input', function() {
+  const price = parseFloat(this.value);
+  const y = parseFloat(document.getElementById('yVal').value);
+  const xInput = document.getElementById('xVal');
+
+  if (this.value === '') { showError(''); return; }
+  if (isNaN(price) || isNaN(y) || y===0) { showError(''); return; }
+
+  const x = ((price / y) - 30) / 15 + 2.5;
+  if (!isFinite(x)) return;
+  if (x < 0) return;
+
+  xInput.value = x.toFixed(4);
+  updateFormula(x, y);
+});
+
+function resetValues() {
+  document.getElementById('xVal').value = DEFAULT_X.toFixed(1);
+  document.getElementById('yVal').value = DEFAULT_Y.toFixed(1);
+  calc();
+}
+
+window.onload = function() { resetValues(); };
+</script>
+
+<!-- === 過往記錄區塊（黑暗化） === -->
+<div class="order-block" style="background:#1e1e1e; padding:10px; border-radius:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #555; padding:8px 0;">
+    <label for="completed" style="font-size:14px; color:#eee;">過往記錄完成訂單件數</label>
+    <input type="number" id="completed" value=""
+           style="width:60px; text-align:right; font-size:14px; background:#2a2a2a; color:#eee; border:1px solid #555; border-radius:6px; padding:4px 6px;">
+  </div>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #555; padding:8px 0;">
+    <label for="takeRate" style="font-size:14px; color:#eee;">區間取單率</label>
+    <div style="display:flex; align-items:center; gap:3px;">
+      <input type="number" id="takeRate" value=""
+             style="width:70px; text-align:right; font-size:14px; background:#2a2a2a; color:#eee; border:1px solid #555; border-radius:6px; padding:4px 6px;">
+      <span style="color:#ccc; font-size:14px;">%</span>
+    </div>
+  </div>
+
+  <div id="generatedOrdersResult" style="margin-top:10px; font-size:15px; font-weight:bold; text-align:center; color:#eee;"></div>
+  <div id="extraInfo" style="margin-top:5px; font-size:15px; font-weight:bold; text-align:center; color:#eee;"></div>
+
+  <div style="text-align:center; margin-top:10px;">
+    <button onclick="resetOrders()"
+            style="background:#2a2a2a; color:#eee; border:1px solid #555; padding:6px 16px; border-radius:8px; font-size:14px;">
+      重置
+    </button>
+  </div>
+</div>
+
+<script>
+function calcOrders() {
+  const completed = parseFloat(document.getElementById('completed').value);
+  const takeRateInput = parseFloat(document.getElementById('takeRate').value);
+
+  if (isNaN(completed) || isNaN(takeRateInput) || takeRateInput <= 0) {
+    document.getElementById('generatedOrdersResult').innerText = '';
+    document.getElementById('extraInfo').innerText = '';
+    return;
+  }
+
+  const takeRate = takeRateInput / 100;
+  const baseRate = 0.85;
+  const generated = completed / takeRate;
+
+  let extraText = '';
+  if (takeRate >= baseRate) {
+    const maxReject = (completed / baseRate) - generated;
+    extraText = `還可以拒掉 ${maxReject.toFixed(2)} 單`;
+  } else {
+    const needComplete = (baseRate * generated - completed) / (1 - baseRate);
+    extraText = `還需要完成 ${needComplete.toFixed(2)} 單`;
+  }
+
+  document.getElementById('generatedOrdersResult').innerText =
+    `系統生成訂單數：${generated.toFixed(2)} 單`;
+  document.getElementById('extraInfo').innerText = extraText;
+}
+
+function resetOrders() {
+  document.getElementById('completed').value = "";
+  document.getElementById('takeRate').value = "";
+  document.getElementById('generatedOrdersResult').innerText = "";
+  document.getElementById('extraInfo').innerText = "";
+}
+
+document.getElementById('completed').addEventListener('input', calcOrders);
+document.getElementById('takeRate').addEventListener('input', calcOrders);
+
+window.addEventListener("load", function() {
+  resetValues();
+  resetOrders();
+});
+</script>
+
+<div style="text-align:center; margin-top:30px; font-size:14px; color:#b00; line-height:1.8; border-top:1px solid #ccc; padding-top:10px;">
+  ⚠️ 注意事項️ ⚠️ <br>
+  ※ 以上僅供參考※<br>
+  ※ 一般熊貓舊制就會偷遠單公里數0.3~0.8公里不等，請自行再扣除※<br>
+  v1.0
+</div>
+</body>
+</html>
