@@ -12,6 +12,7 @@ body {
   background: #121212;
   color: #eee;
 }
+/*
 .container {
   max-width: 500px;
   margin: auto;
@@ -19,6 +20,17 @@ body {
   padding: 20px;
   border-radius: 22px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+*/
+.container {
+  width: 90%;       /* 新增：自動縮放到螢幕寬度的 90% */
+  max-width: 500px;
+  margin: auto;
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 22px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  box-sizing: border-box;  /* 保險：padding 不會超出寬度 */
 }
 h2 {
   display: flex;
@@ -52,7 +64,8 @@ input { width: calc(100% - 50px); padding: 10px; font-size: 16px; background: #2
 }
 
 .result { margin-top: 15px; font-size: 28px; text-align: center; font-weight: bold; }
-#amount { color: red; width: 180px; font-size: 22px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #ff5555; }
+/*#amount { color: red; width: 180px; font-size: 22px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #ff5555; }*/
+#amount { color: red; width: 200px; font-size: 28px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #fc1212; }
 
 #formula { margin-top: 15px; font-size: 16px; color: #eee; line-height: 1.5; white-space: pre-line; text-align: center; }
 #oldFormula {
@@ -65,7 +78,18 @@ input { width: calc(100% - 50px); padding: 10px; font-size: 16px; background: #2
 }
 #errorMsg { color:red; margin-bottom:10px; font-weight:bold; }
 
-body, input, button { touch-action: manipulation; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+/*body, input, button { touch-action: manipulation; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }*/
+
+body, button {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input {
+  touch-action: auto;  /* 讓輸入框正常可點擊 */
+  -webkit-user-select: text;
+}
 
 /* 隱藏數字輸入框的上下箭頭 */
 input[type=number]::-webkit-inner-spin-button,
@@ -81,6 +105,56 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
 .order-block input { background:#2a2a2a; color:#eee; border:1px solid #555; }
 .order-block span { color:#ccc; }
 .order-block button { background:#0078d7; color:#fff; }
+
+/* 新增：配送費區塊樣式 */
+.calc-block {
+  max-width: 320px;
+  margin: 25px auto;
+  background: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+}
+.calc-block input {
+  background:#2a2a2a;
+  color:#eee;
+  border:1px solid #555;
+  border-radius:6px;
+  text-align:center;
+  padding:6px;
+  width:90px;
+  font-size:16px;
+}
+.calc-block button {
+  background:#0078d7;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 16px;
+  margin-top:10px;
+  cursor:pointer;
+}
+/* 新增：配送費區塊樣式 */
+
+@media (max-width: 375px) { /* iPhone SE 類似寬度 */
+  .inc-btn, .dec-btn, .reset-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  #amount {
+    font-size: 32px;
+    width: 150px;
+  }
+  #formula, #oldFormula {
+    font-size: 14px;
+  }
+  .calc-block input {
+    width: 70px;
+    font-size: 14px;
+  }
+}
 </style>
 </head>
 
@@ -110,7 +184,8 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
   <div id="formula">公式區顯示</div>
 
   <div class="result">
-    <input type="number" id="amount" value="" step="0.01" placeholder="輸入金額可反算" /> 元
+    <!-- <input type="number" id="amount" value="" step="0.01" placeholder="輸入金額可反算" /> 元 -->
+    <input type="number" id="amount" value="" step="0.01" placeholder="輸入金額" /> 元
     <div id="oldFormula"></div>
   </div>
 </div>
@@ -140,7 +215,17 @@ function calc() {
 
   if (isNaN(x) || isNaN(y)) { showError(''); return; } else { showError(''); }
 
-  const result = (30 + ((x - 2.5) * 15)) * y;
+  //const result = (30 + ((x - 2.5) * 15)) * y;
+  /*改新版計算*/
+  //const result = (20 + ((x - 2.5) * 15)) * y + 5 + 5;
+  /*改新版計算*/
+  /*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
+  const base = parseFloat(document.getElementById('baseFare').value);
+  const rate = parseFloat(document.getElementById('rateFare').value);
+  const delivery = (base - 10) / rate;
+  const result = (delivery + ((x - 2.5) * 15)) * y + 5 + 5;
+  /*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
+  
   if (!(document.activeElement && document.activeElement.id==='amount')) {
     amountInput.value = result.toFixed(2);
   }
@@ -148,27 +233,61 @@ function calc() {
 }
 
 function updateFormula(x, y) {
+  const base = parseFloat(document.getElementById('baseFare').value);
+  const rate = parseFloat(document.getElementById('rateFare').value);
+  const delivery = (base - 10) / rate; // 小工具算出的配送費
+  
   const kmCalc = ((x - 2.5) * 15).toFixed(2);
   const oldBase = 40;
   const oldResult = (oldBase + parseFloat(kmCalc)).toFixed(2);
   const oldResultRush = (parseFloat(oldResult) + 2).toFixed(2);
 
-  const newAmount = (30 + ((x - 2.5) * 15)) * y;
+  //const newAmount = (30 + ((x - 2.5) * 15)) * y;
+  /*改新版計算*/
+  //const newAmount = (20 + ((x - 2.5) * 15)) * y + 5 + 5;
+  /*改新版計算*/
+  /*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
+  const newAmount = (delivery + ((x - 2.5) * 15)) * y + 5 + 5;
+  /*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
+  
   const diffNormal = (newAmount - oldResult).toFixed(2);
   const diffRush = (newAmount - oldResultRush).toFixed(2);
 
-  const formulaText = 
+  /*const formulaText = 
 `20(配送費)+5(安全獎勵)+5(廣告費)
-30 + (( ${x.toFixed(4)} - 2.5 ) × 15 = ${kmCalc} 元) × ${y.toFixed(1)}(倍率)`;
+30 + (( ${x.toFixed(4)} - 2.5 ) × 15 = ${kmCalc} 元) × ${y.toFixed(1)}(倍率)`;*/
 
+/*改新版計算*/
+  /*const formulaText = 
+`20(配送費) + (( ${x.toFixed(4)} - 2.5 ) × 15 = ${kmCalc} 元) × ${y.toFixed(1)}(倍率) 
++5(廣告費) +5(安全獎勵)`;*/
+/*改新版計算*/
+/*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
+  const formulaText = 
+`${delivery.toFixed(4)}(配送費) + (( ${x.toFixed(4)} - 2.5 ) × 15 = ${kmCalc} 元) × ${y.toFixed(1)}(倍率) 
++5(廣告費) +5(安全獎勵)`;
+/*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
+
+/*
   const oldFormulaText = `
 舊制算法：<br>
 非餐期 40 + ${kmCalc} = <span style="color:#a00; font-weight:bold;">${oldResult} 元</span> (差 ${diffNormal} 元)<br>
 餐期 +2 → <span style="color:#a00; font-weight:bold;">${oldResultRush} 元</span> (差 ${diffRush} 元)
 `;
+*/
+  const oldFormulaText = `
+舊制算法：<br>
+餐期 40+2 + ${kmCalc} = <span style="color:#fa6969; font-weight:bold;">${oldResultRush} 元</span><br>(差 ${diffRush} 元)
+`;
 
   document.getElementById('formula').innerText = formulaText;
   document.getElementById('oldFormula').innerHTML = oldFormulaText;
+  
+  // 同步更新 amount 顯示最新結果
+  const amountInput = document.getElementById('amount');
+  if (!(document.activeElement && document.activeElement.id==='amount')) {
+    amountInput.value = newAmount.toFixed(2);
+  }
 }
 
 document.getElementById('amount').addEventListener('input', function() {
@@ -179,7 +298,17 @@ document.getElementById('amount').addEventListener('input', function() {
   if (this.value === '') { showError(''); return; }
   if (isNaN(price) || isNaN(y) || y===0) { showError(''); return; }
 
-  const x = ((price / y) - 30) / 15 + 2.5;
+  //const x = ((price / y) - 30) / 15 + 2.5;
+  /*改新版計算*/
+  //const x = (((price - 5 - 5) / y) - 20) / 15 + 2.5;
+  /*改新版計算*/
+  /*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
+  // 先取得配送費
+  const base = parseFloat(document.getElementById('baseFare').value);
+  const rate = parseFloat(document.getElementById('rateFare').value);
+  const delivery = (base - 10) / rate;
+  const x = (((price - 5 - 5) / y) - delivery) / 15 + 2.5;
+  /*改新版計算 因配送費未知 用現有基本單價去換算 現在是42*/
   if (!isFinite(x)) return;
   if (x < 0) return;
 
@@ -188,9 +317,17 @@ document.getElementById('amount').addEventListener('input', function() {
 });
 
 function resetValues() {
+  // 重置上方倍率/公里數
   document.getElementById('xVal').value = DEFAULT_X.toFixed(1);
   document.getElementById('yVal').value = DEFAULT_Y.toFixed(1);
-  calc();
+
+  // 重置下方配送費小工具
+  document.getElementById('baseFare').value = 42;
+  document.getElementById('rateFare').value = 1.4;
+
+  // 重新計算
+  calcDelivery(); // 更新配送費顯示
+  calc();         // 更新上方公式
 }
 
 window.onload = function() { resetValues(); };
@@ -264,15 +401,76 @@ document.getElementById('completed').addEventListener('input', calcOrders);
 document.getElementById('takeRate').addEventListener('input', calcOrders);
 
 window.addEventListener("load", function() {
-  resetValues();
-  resetOrders();
+  resetValues();      // 重置倍率與公里數
+  resetOrders();      // 重置取單率區
+  calcDelivery();     // 初始化配送費
+  calc();             // 確保公式區有更新
 });
 </script>
 
-<div style="text-align:center; margin-top:30px; font-size:14px; color:#b00; line-height:1.8; border-top:1px solid #ccc; padding-top:10px;">
+
+<!-- === 🆕 配送費計算小工具 === -->
+<div class="calc-block">
+  <!-- <h3 style="color:#ff69b4; margin-bottom:10px;">配送費計算小工具</h3> -->
+  <div>
+    常態基本單價：
+    <input type="number" id="baseFare" value="42" step="0.1">
+  </div>
+  <div style="margin-top:8px;">
+    常態倍率：
+    <input type="number" id="rateFare" value="1.4" step="0.1">
+  </div>
+  <button id="resetBtn">重置</button>
+  <div id="deliveryResult" style="margin-top:8px; font-size:18px; color:#ffa500;"></div>
+</div>
+
+<script>
+function calcDelivery() {
+  const base = parseFloat(document.getElementById('baseFare').value);
+  const rate = parseFloat(document.getElementById('rateFare').value);
+  if (isNaN(base) || isNaN(rate) || rate <= 0) {
+    document.getElementById('deliveryResult').innerText = '請輸入有效數值';
+    return;
+  }
+  const delivery = (base - 10) / rate;
+  document.getElementById('deliveryResult').innerText = `配送費 ≈ ${delivery.toFixed(4)} 元`;
+}
+
+// 監聽輸入變化即時更新
+document.getElementById('baseFare').addEventListener('input', calcDelivery);
+document.getElementById('rateFare').addEventListener('input', calcDelivery);
+
+// 重置按鈕：恢復為 42 / 1.4 並更新顯示
+document.getElementById('resetBtn').addEventListener('click', function() {
+  document.getElementById('baseFare').value = 42;
+  document.getElementById('rateFare').value = 1.4;
+  calcDelivery();
+  calc();         // 更新公式區
+});
+document.getElementById('baseFare').addEventListener('input', function() {
+  calcDelivery(); // 更新小工具顯示
+  calc();         // 更新公式區
+});
+document.getElementById('rateFare').addEventListener('input', function() {
+  calcDelivery(); // 更新小工具顯示
+  calc();         // 更新公式區
+});
+
+
+// 頁面載入後自動計算一次
+window.addEventListener('load', calcDelivery);
+</script>
+
+
+<div style="text-align:center; margin-top:30px; font-size:14px; color:#fc0303; line-height:1.8; border-top:1px solid #ccc; padding-top:10px;">
   ⚠️ 注意事項️ ⚠️ <br>
-  ※ 以上僅供參考※<br>
+  ※目前未知官方實際算法官方只提供資訊:※<br>
+  ※配送費(包含里程)x倍率+廣告+安全獎勵※<br>
+  ※只有配送費未知※<br>
+  ※里程.倍率.廣告.安全獎勵確定數值※<br>
+  ※暫時以現在基本單價42去推算配送費※<br>
   ※ 一般熊貓舊制就會偷遠單公里數0.3~0.8公里不等，請自行再扣除※<br>
+  ※ 以上僅供參考※<br>
   v1.0
 </div>
 </body>
