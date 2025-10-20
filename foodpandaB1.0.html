@@ -209,8 +209,8 @@ function calc() {
   const first = baseFirst + distancePart;
   const secondRaw = baseSecond + distancePart;
   //const second = Math.max(SECOND_FLOOR, secondRaw); // 疊單最低 30 元
-  // 疊單基礎為 30 元，再加距離部分
-  const second = 30 + Math.max(0, (x - 2.50)) * KM_FEE * y;
+  // 疊單 = max(30, (10+5+5)×倍率 + 距離加成)
+  const second = Math.max(SECOND_FLOOR, secondRaw);
 
   // 顯示第一單金額
   if (!(document.activeElement && document.activeElement.id === 'amount')) {
