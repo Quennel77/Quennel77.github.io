@@ -23,14 +23,14 @@ body {
 }
 */
 .container {
-  width: 90%;       /* 新增：自動縮放到螢幕寬度的 90% */
+  width: 90%;
   max-width: 500px;
   margin: auto;
   background: #1e1e1e;
   padding: 20px;
   border-radius: 22px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  box-sizing: border-box;  /* 保險：padding 不會超出寬度 */
+  box-sizing: border-box;
 }
 h2 {
   display: flex;
@@ -64,7 +64,6 @@ input { width: calc(100% - 50px); padding: 10px; font-size: 16px; background: #2
 }
 
 .result { margin-top: 15px; font-size: 28px; text-align: center; font-weight: bold; }
-/*#amount { color: red; width: 200px; font-size: 28px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #fc1212; }*/
 #amount { width: 200px; font-size: 28px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #fc1212; }
 
 #formula { margin-top: 15px; font-size: 16px; color: #eee; line-height: 1.5; white-space: pre-line; text-align: center; }
@@ -78,7 +77,16 @@ input { width: calc(100% - 50px); padding: 10px; font-size: 16px; background: #2
 }
 #errorMsg { color:red; margin-bottom:10px; font-weight:bold; }
 
-/*body, input, button { touch-action: manipulation; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }*/
+/* ✅ 單獨控制疊單那排大小，不影響上方主金額 */
+.sub-result {
+  font-size: 16px !important;   /* 疊單與元變小 */
+}
+
+.sub-result #secondAmount {
+  width: 70px !important;
+  font-size: 18px !important;
+  padding: 2px 4px !important;
+}
 
 body, button {
   touch-action: manipulation;
@@ -87,7 +95,7 @@ body, button {
 }
 
 input {
-  touch-action: auto;  /* 讓輸入框正常可點擊 */
+  touch-action: auto;
   -webkit-user-select: text;
 }
 
@@ -106,7 +114,35 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
 .order-block span { color:#ccc; }
 .order-block button { background:#0078d7; color:#fff; }
 
-/* 新增：針對 iPhone SE 之類小螢幕 */
+#base25 {
+  font-size: 15px;
+  color: #ccc;
+  margin-top: 4px;
+  text-align: center;
+}
+
+#extraFee {
+  font-size: 15px;
+  color: #ccc;
+  margin-top: 4px;
+  text-align: center;
+}
+
+#base25secondHint {
+  font-size: 15px;
+  color: #ccc;
+  margin-top: 4px;
+  text-align: center;
+}
+
+#extraFeesecondHint {
+  font-size: 15px;
+  color: #ccc;
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* 小螢幕 */
 @media (max-width: 375px) {
   .inc-btn, .dec-btn, .reset-btn {
     width: 50px;
@@ -155,12 +191,18 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
 
   <div id="errorMsg"></div>
 
-  <!-- <div id="formula">公式區顯示</div> -->
-
   <div class="result">
-    <!-- 可輸入金額，會反推出公里數 -->
-    <input type="number" id="amount" value="" step="0.01" placeholder="輸入金額可反推公里" /> 元
+    <input type="number" id="amount" value="" step="0.01" placeholder="輸入金額" /> 元
+    <div id="base25"></div>
+    <div id="extraFee"></div>
     <div id="secondHint"></div>
+    <div class="sub-result">
+      <span class="second-text">疊單：</span>
+      <input type="number" id="secondAmount" value="" step="0.01" 
+        style="width:90px; font-size:18px; text-align:center; background:#2a2a2a; color:#eee; border:1px solid #555; border-radius:6px;"> 元
+    </div>
+    <div id="base25secondHint"></div>
+    <div id="extraFeesecondHint"></div>
     <div id="oldFormula"></div>
   </div>
 </div>
@@ -198,27 +240,40 @@ function calc() {
   const y = parseFloat(document.getElementById('yVal').value);
   const amountInput = document.getElementById('amount');
 
-  // ✅ kmFee 輸入框註解後仍保留全域 KM_FEE
   if (isNaN(x) || isNaN(y)) { showError(''); return; } else { showError(''); }
 
   // === 新算法 ===
-  const baseFirst = (10 + 10 + 5 + 5) * y;     // 第一單固定部分
-  const baseSecond = (10 + 5 + 5) * y;         // 疊單固定部分（扣掉取餐10）
-  const distancePart = Math.max(0, (x - 2.50)) * KM_FEE * y; // 距離加成
+  const baseFirst = (10 + 10 + 5 + 5) * y;                    // 第一單固定部分
+  const distancePart = Math.max(0, (x - 2.50)) * KM_FEE * y;  // 距離加成（兩者共用）
 
+  // 第一單
   const first = baseFirst + distancePart;
-  const secondRaw = baseSecond + distancePart;
-  //const second = Math.max(SECOND_FLOOR, secondRaw); // 疊單最低 30 元
-  // 疊單 = max(30, (10+5+5)×倍率 + 距離加成)
-  const second = Math.max(SECOND_FLOOR, secondRaw);
 
-  // 顯示第一單金額
+  // ▶ 疊單（2.5 公里內：「max(30, 20*y)」，超過距離再加距離費）
+  const baseSecondRaw = (10 + 5 + 5) * y;                     // 20 * y
+  const baseSecond25 = Math.max(SECOND_FLOOR, baseSecondRaw); // 低於30時顯示30，否則顯示 20*y
+  const distanceSecondFee = distancePart;                     // 疊單距離加成同上
+  const second = baseSecond25 + distanceSecondFee;            // (max(30,20y)) + 距離加成
+
+  // 顯示第一單金額（若不是在手動改第一單金額）
   if (!(document.activeElement && document.activeElement.id === 'amount')) {
     amountInput.value = first.toFixed(2);
   }
 
-  // 疊單提示
-  document.getElementById('secondHint').innerText = `疊單： ${second.toFixed(2)} 元`;
+  // 文字顯示
+  const base25 = (10 + 10 + 5 + 5) * y;                       // 2.5 公里內第一單金額
+  const distanceFee = distancePart;                           // 多出里程費用
+  document.getElementById('base25').innerText = `目前單價： ${base25.toFixed(2)} 元`;
+  document.getElementById('extraFee').innerText = `多出里程費用： ${distanceFee.toFixed(2)} 元`;
+
+  // 疊單金額更新輸入框（若不是在手動改疊單金額）
+  const secondInput = document.getElementById('secondAmount');
+  const activeId = document.activeElement ? document.activeElement.id : "";
+  if (activeId !== 'secondAmount') {
+    secondInput.value = second.toFixed(2);
+  }
+  document.getElementById('base25secondHint').innerText = `目前疊單單價： ${baseSecond25.toFixed(2)} 元`;
+  document.getElementById('extraFeesecondHint').innerText = `多出疊單里程費用： ${distanceSecondFee.toFixed(2)} 元`;
 
   // 舊制參考
   const oldResultRush = (40 + ((x - 2.5) * 15) + 2).toFixed(2);
@@ -235,11 +290,29 @@ document.getElementById('amount').addEventListener('input', function() {
   if (this.value === '') { showError(''); return; }
   if (isNaN(price) || isNaN(y) || y === 0) { showError(''); return; }
 
-// ✅ 修正版：金額反推公里數（對應主算法含倍率）
-const fixedPart = (10 + 10 + 5 + 5) * y; // 第一單固定部分
-const x = ((price - fixedPart) / (KM_FEE * y)) + 2.5;
+  // 金額反推公里數（第一單公式）
+  const fixedPart = (10 + 10 + 5 + 5) * y;
+  const x = ((price - fixedPart) / (KM_FEE * y)) + 2.5;
+
   if (!isFinite(x)) return;
   if (x < 2.50) return;
+
+  xInput.value = x.toFixed(2);
+  calc();
+});
+
+// 疊單金額反推公里數
+document.getElementById('secondAmount').addEventListener('input', function() {
+  const price = parseFloat(this.value);
+  const y = parseFloat(document.getElementById('yVal').value);
+  const xInput = document.getElementById('xVal');
+  const base = Math.max(30, (10 + 5 + 5) * y); // = max(30, 20*y)
+
+  if (this.value === '' || isNaN(price) || isNaN(y) || y === 0) return;
+
+  // 疊單反推公里數公式
+  const x = ((price - base) / (KM_FEE * y)) + 2.5;
+  if (!isFinite(x) || x < 2.5) return;
 
   xInput.value = x.toFixed(2);
   calc();
@@ -253,9 +326,6 @@ function resetValues() {
 
 window.onload = function() { resetValues(); };
 </script>
-
-
-
 
 <!-- === 過往記錄區塊（黑暗化） === -->
 <div class="order-block" style="background:#1e1e1e; padding:10px; border-radius:12px;">
