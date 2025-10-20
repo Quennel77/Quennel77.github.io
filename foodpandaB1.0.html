@@ -64,7 +64,7 @@ input { width: calc(100% - 50px); padding: 10px; font-size: 16px; background: #2
 }
 
 .result { margin-top: 15px; font-size: 28px; text-align: center; font-weight: bold; }
-#amount { width: 200px; font-size: 28px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #fc1212; }
+#amount { width: 200px; font-size: 30px; padding: 2px 4px; text-align: center; background: #2a2a2a; border: 1px solid #555; color: #fc1212; }
 
 #formula { margin-top: 15px; font-size: 16px; color: #eee; line-height: 1.5; white-space: pre-line; text-align: center; }
 #oldFormula, #secondHint {
@@ -83,7 +83,7 @@ input { width: calc(100% - 50px); padding: 10px; font-size: 16px; background: #2
 }
 
 .sub-result #secondAmount {
-  width: 70px !important;
+  width: 80px !important;
   font-size: 18px !important;
   padding: 2px 4px !important;
 }
@@ -114,9 +114,46 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
 .order-block span { color:#ccc; }
 .order-block button { background:#0078d7; color:#fff; }
 
+#yVal {
+  padding: 4px 6px;
+  height: 28px;
+  font-size: 20px;
+}
+
+#xVal {
+  padding: 4px 6px;
+  height: 28px;
+  font-size: 20px;
+}
+
+.inc-btn, .dec-btn {
+  width: 60px;        /* 原本 60px */
+  height: 38px;       /* 原本 60px → 改成略矮 */
+  font-size: 26px;    /* 字體縮小一點 */
+  margin-left: 4px;
+  border-radius: 6px;
+}
+.inc-btn, .dec-btn {
+  -webkit-appearance: none !important;  /* 🔥 關掉手機預設按鈕外觀 */
+  appearance: none !important;
+  padding: 0 !important;                /* 去除瀏覽器內建空白 */
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: 60px !important;               /* ✅ 寬度固定可用 */
+  height: 38px !important;              /* ✅ 高度固定可用 */
+  font-size: 22px !important;           /* 字體跟著調整 */
+  line-height: 1 !important;
+  margin-left: 4px;
+  border-radius: 6px;
+  border: none;
+  background: #ff69b4;
+  color: white;
+  cursor: pointer;
+}
+
 #base25 {
   font-size: 15px;
-  color: #ccc;
+  color: #f2c2c2;
   margin-top: 4px;
   text-align: center;
 }
@@ -130,7 +167,7 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
 
 #base25secondHint {
   font-size: 15px;
-  color: #ccc;
+  color: #f2c2c2;
   margin-top: 4px;
   text-align: center;
 }
@@ -151,7 +188,7 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
   }
   #amount {
     font-size: 32px;
-    width: 150px;
+    width: 130px;
   }
   #formula, #oldFormula, #secondHint {
     font-size: 14px;
@@ -198,8 +235,8 @@ button:active, .calc-btn:active, .reset-btn:active { transform: none !important;
     <div id="secondHint"></div>
     <div class="sub-result">
       <span class="second-text">疊單：</span>
-      <input type="number" id="secondAmount" value="" step="0.01" 
-        style="width:90px; font-size:18px; text-align:center; background:#2a2a2a; color:#eee; border:1px solid #555; border-radius:6px;"> 元
+      <input type="number" id="secondAmount" value="" step="0.01" placeholder="輸入金額" 
+        style="width:90px; font-size:18px; text-align:center; background:#2a2a2a; color:#fc1212; border:1px solid #555; border-radius:6px;"> 元
     </div>
     <div id="base25secondHint"></div>
     <div id="extraFeesecondHint"></div>
@@ -372,16 +409,26 @@ function calcOrders() {
 
   let extraText = '';
   if (takeRate >= baseRate) {
-    const maxReject = (completed / baseRate) - generated;
-    extraText = `還可以拒掉 ${maxReject.toFixed(2)} 單`;
+const maxReject = (completed / baseRate) - generated;
+let color = '#30f725'; // 預設綠色
+
+if (maxReject >= 11) {
+  color = '#30f725'; // 綠色
+} else if (maxReject >= 6) {
+  color = '#ffcc00'; // 黃色
+} else {
+  color = '#ff4444'; // 紅色
+}
+
+extraText = `還可以拒掉 <span style="color:${color}; font-weight:bold;">${maxReject.toFixed(2)}</span> 單`;
   } else {
     const needComplete = (baseRate * generated - completed) / (1 - baseRate);
-    extraText = `還需要完成 ${needComplete.toFixed(2)} 單`;
+    extraText = `還需完成 <span style="color:#ff5555; font-weight:bold;">${needComplete.toFixed(2)}</span> 單`;
   }
 
   document.getElementById('generatedOrdersResult').innerText =
     `系統生成訂單數：${generated.toFixed(2)} 單`;
-  document.getElementById('extraInfo').innerText = extraText;
+  document.getElementById('extraInfo').innerHTML = extraText;
 }
 
 function resetOrders() {
@@ -405,7 +452,7 @@ window.addEventListener("load", function() {
   ⚠️ 注意事項️ ⚠️ <br>
   ※ 舊制就會偷遠單公里數0.3~0.8公里不等，請自行再扣除※<br>
   ※ 以上僅供參考※<br>
-  2025年10月20日 04:41 v1.2<br>
+  2025年10月21日 02:50 <br>
 </div>
 </body>
 </html>
