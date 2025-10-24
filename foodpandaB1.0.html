@@ -152,7 +152,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 
 <script>
 /* ===== 你的原始邏輯（未動） ===== */
-const DEFAULT_X=2.50, DEFAULT_Y=1.40, SECOND_FLOOR=30; let KM_FEE=12.01;//12.142
+const DEFAULT_X=2.50, DEFAULT_Y=1.40, SECOND_FLOOR=30; let KM_FEE=11.50;//12.142 12.01 11.50
 function change(id,delta){const input=document.getElementById(id);let value=parseFloat(input.value)||0;if(id==="xVal"){value+=delta;if(value<2.50)value=2.50;}else{value+=delta;if(value<0)value=0;}input.value=value.toFixed(2);calc();}
 function showError(msg){document.getElementById('errorMsg').innerText=msg||'';}
 function calc(){
@@ -379,3 +379,4 @@ window.addEventListener("load",function(){ resetValues(); resetOrders(); calc();
 </div>
 </body>
 </html>
+
