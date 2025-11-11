@@ -107,7 +107,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 .digit.center{ font-weight:800; font-size:30px; color:#fff; }
 /* 讓未選中的項目更小更淡；相鄰的稍微突出；中間最明顯 */
 .wheel .digit{
-  font-size: 26px;
+  font-size: 16px;
   opacity: 0.35;
   transform: scale(0.86);
   transition: transform .18s ease, opacity .18s ease, font-size .18s ease;
@@ -115,21 +115,21 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 
 /* 中心相鄰（±1格） */
 .wheel .digit.near{
-  font-size: 24px;
-  opacity: 0.65;
+  font-size: 22px;
+  opacity: 0.45;
   transform: scale(0.94);
 }
 
 /* 其它更遠的（±2格以上） */
 .wheel .digit.far{
   font-size: 20px;
-  opacity: 0.30;
+  opacity: 0.20;
   transform: scale(0.84);
 }
 
 /* 中心那一格（被選中） */
 .wheel .digit.center{
-  font-size: 32px;
+  font-size: 40px;
   font-weight: 800;
   opacity: 1;
   color: #fff;
@@ -837,6 +837,7 @@ document.addEventListener('DOMContentLoaded', enableAllWheelsVisual);
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(bindStopOverlayEat, 0); });
 })();
 </script>
+
 
 </body>
 </html>
