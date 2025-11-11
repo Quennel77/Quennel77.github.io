@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>報酬計算</title>
 <style>
-/* === 你的原樣式（未動） === */
+/* === 基本樣式 === */
 body{
   font-family: Arial, sans-serif;
-  margin: 6;                     /* 你要的修改 */
-  padding-top: env(safe-area-inset-top, 0px);  /* 可選：避免被瀏海遮住 */
+  margin: 6;
+  padding-top: env(safe-area-inset-top, 0px);
   background: #121212;
   color: #eee;
 }
@@ -42,36 +42,34 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 #base25,#extraFee,#base25secondHint,#extraFeesecondHint{font-size:15px;margin-top:4px;text-align:center;}
 #base25,#base25secondHint{color:#f2c2c2;}
 #extraFee,#extraFeesecondHint{color:#ccc;}
-@media(max-width:375px){
+@media (max-width:375px){
   .inc-btn,.dec-btn,.reset-btn{width:38px;height:38px;font-size:20px;}
   #amount{font-size:32px;width:130px;}
   #formula,#oldFormula,#secondHint{font-size:14px;}
 }
 
-/* === 開啟挑選器的按鈕（不影響原 + / −） === */
+/* === ⭥ 開啟挑選器的按鈕 === */
 .picker-btn{
-  width:50px;                 /* 保持版面計算不變 */
+  width:50px;
   height:38px;
   margin-left:4px;
-  margin-right:0px;         /* 把 18px 空間還回去 */
+  margin-right:0px;
   border:1px solid #555;
   border-radius:6px;
   background:#2a2a2a;
   color:#eee;
   font-size:20px;
   cursor:pointer;
-  transform:scale(0.64);      /* 視覺縮小 */
+  transform:scale(0.64);
   transform-origin:right center;
-  padding:0;                  /* 去內距，避免被撐開 */
+  padding:0;
 }
 
-/* =========================
-   ✅ 穩定版挑選器（共用樣式）
-   ========================= */
+/* ========================= 單欄挑選器 ========================= */
 .picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9999;}
 .picker{width:min(92vw,420px);max-height:72vh;background:#1f1f1f;border:1px solid #444;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden;}
 .picker-header{padding:12px 16px;font-size:16px;color:#eee;border-bottom:1px solid #333;text-align:center;}
-.picker-wheel{position:relative;height:260px;overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain;}
+.picker-wheel{position:relative;height:260px;overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .picker-list{margin:0;padding:8px 0;list-style:none;}
 .picker-item{height:46px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#ccc;user-select:none;cursor:pointer;}
 .picker-item:hover{background:#2a2a2a;}
@@ -79,6 +77,83 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 .picker-actions{display:flex;gap:10px;padding:12px;border-top:1px solid #333;}
 .picker-actions button{flex:1;height:40px;border-radius:8px;border:1px solid #555;background:#2a2a2a;color:#eee;font-size:16px;cursor:pointer;}
 .picker-actions .confirm{background:#0a84ff;border-color:#0a84ff;color:#fff;}
+
+/* ======== 多欄數位滑輪（倍率 & 公里） ======== */
+.dial-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  display:none;align-items:center;justify-content:center;
+  z-index:10000;overscroll-behavior:contain;
+  touch-action:none; /* 遮罩不接手原生手勢，避免鎖死 */
+}
+.dial{width:min(92vw,540px);background:#1f1f1f;border:1px solid #444;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.6);overflow:hidden;}
+.dial-header{padding:12px 16px;font-size:16px;color:#eee;border-bottom:1px solid #333;text-align:center;}
+.digit-wrap{position:relative;display:grid;grid-template-columns:1fr 16px 1fr 1fr;gap:10px;padding:18px 20px 14px;align-items:center;}
+.dot{ text-align:center;color:#ccc;font-size:26px;user-select:none; }
+.wheel{
+  position:relative;height:220px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+  background:#1c1c1c;border:1px solid #333;border-radius:10px;scroll-snap-type:y mandatory;
+  -webkit-overflow-scrolling:touch;
+  touch-action:auto;           /* 使用原生慣性滾動 */
+  will-change:scroll-position;
+}
+.wheel::-webkit-scrollbar{width:6px}
+.wheel::-webkit-scrollbar-thumb{background:#444;border-radius:6px}
+.digit{height:48px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#eee;scroll-snap-align:center;user-select:none;}
+.highlight{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:48px;pointer-events:none;border-top:1px solid rgba(255,255,255,.25);border-bottom:1px solid rgba(255,255,255,.25);}
+.spacer{height:72px;}
+.dial-actions{display:flex;gap:10px;padding:12px;border-top:1px solid #333;}
+.dial-actions button{flex:1;height:40px;border-radius:8px;border:1px solid #555;background:#2a2a2a;color:#eee;font-size:16px;cursor:pointer;}
+.dial-actions .confirm{background:#0a84ff;border-color:#0a84ff;color:#fff;}
+.digit.center{ font-weight:800; font-size:30px; color:#fff; }
+/* 讓未選中的項目更小更淡；相鄰的稍微突出；中間最明顯 */
+.wheel .digit{
+  font-size: 26px;
+  opacity: 0.35;
+  transform: scale(0.86);
+  transition: transform .18s ease, opacity .18s ease, font-size .18s ease;
+}
+
+/* 中心相鄰（±1格） */
+.wheel .digit.near{
+  font-size: 24px;
+  opacity: 0.65;
+  transform: scale(0.94);
+}
+
+/* 其它更遠的（±2格以上） */
+.wheel .digit.far{
+  font-size: 20px;
+  opacity: 0.30;
+  transform: scale(0.84);
+}
+
+/* 中心那一格（被選中） */
+.wheel .digit.center{
+  font-size: 32px;
+  font-weight: 800;
+  opacity: 1;
+  color: #fff;
+}
+
+/* === 避免手機上 + / − 被擠到最右邊 === */
+.input-group { gap: 8px; align-items: center; }
+.input-group > * { flex: 0 0 auto; }
+.input-group input { flex: 1 1 0; width: auto !important; min-width: 0; }
+.picker-btn { margin-right: 10px; transform: scale(0.62); transform-origin: right center; }
+.input-group .inc-btn { margin-left: 6px !important; }
+.input-group .inc-btn,.input-group .dec-btn,.picker-btn { flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .input-group { gap: 8px; }
+  .input-group .inc-btn,.input-group .dec-btn { width: 44px; height: 38px; font-size: 20px !important; margin-left: 6px !important; }
+  .picker-btn { margin-right: 8px; transform: scale(0.58); }
+  .container { padding-left: 8px; padding-right: 8px; }
+}
+@media (max-width: 360px) {
+  .input-group { gap: 6px; }
+  .picker-btn { margin-right: 6px; transform: scale(0.56); }
+  .input-group .inc-btn,.input-group .dec-btn { width: 40px; }
+}
 </style>
 </head>
 
@@ -91,9 +166,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 
   <label>當時倍率：</label>
   <div class="input-group">
-    <!-- 🔧 step 改為 0.01 配合 0.01 增量 -->
     <input type="number" id="yVal" value="1.40" step="0.01" oninput="calc()">
-    <!-- ✅ 新增：倍率挑選器按鈕 -->
     <button class="picker-btn" id="openYPicker" aria-label="選擇倍率">⭥</button>
     <button class="inc-btn">+</button>
     <button class="dec-btn">-</button>
@@ -102,7 +175,6 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
   <label>總公里數：</label>
   <div class="input-group">
     <input type="number" id="xVal" value="2.50" step="0.10" oninput="calc()">
-    <!-- ✅ 既有的公里數挑選器按鈕 -->
     <button class="picker-btn" id="openXPicker" aria-label="選擇公里數">⭥</button>
     <button class="inc-btn">+</button>
     <button class="dec-btn">-</button>
@@ -126,7 +198,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
   </div>
 </div>
 
-<!-- === X PICKER：公里數挑選器 DOM === -->
+<!-- === 單欄挑選器：公里數 === -->
 <div class="picker-overlay" id="xPickerOverlay" role="dialog" aria-modal="true" aria-labelledby="xPickerTitle">
   <div class="picker">
     <div class="picker-header" id="xPickerTitle">選擇公里數：<span id="xPickerNow" style="color:#0a84ff;font-weight:700;">—</span></div>
@@ -138,7 +210,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
   </div>
 </div>
 
-<!-- === Y PICKER：倍率挑選器 DOM（新加） === -->
+<!-- === 單欄挑選器：倍率 === -->
 <div class="picker-overlay" id="yPickerOverlay" role="dialog" aria-modal="true" aria-labelledby="yPickerTitle">
   <div class="picker">
     <div class="picker-header" id="yPickerTitle">選擇倍率：<span id="yPickerNow" style="color:#0a84ff;font-weight:700;">—</span></div>
@@ -150,9 +222,46 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
   </div>
 </div>
 
+<!-- === 多欄：倍率 3 格 === -->
+<div class="dial-overlay" id="yDialOverlay" role="dialog" aria-modal="true" aria-labelledby="yDialTitle">
+  <div class="dial">
+    <div class="dial-header" id="yDialTitle">選擇倍率：<span id="yDialNow" style="color:#0a84ff;font-weight:700;">—</span> ×</div>
+    <div class="digit-wrap">
+      <div class="wheel" id="dialInt"></div>
+      <div class="dot">.</div>
+      <div class="wheel" id="dialD1"></div>
+      <div class="wheel" id="dialD2"></div>
+      <div class="highlight"></div>
+    </div>
+    <div class="dial-actions">
+      <button type="button" id="yDialCancel">取消</button>
+      <button type="button" class="confirm" id="yDialConfirm">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- === 多欄：公里 4 格（至 99.99） === -->
+<div class="dial-overlay" id="xDialOverlay" role="dialog" aria-modal="true" aria-labelledby="xDialTitle">
+  <div class="dial">
+    <div class="dial-header" id="xDialTitle">選擇公里數：<span id="xDialNow" style="color:#0a84ff;font-weight:700;">—</span> km</div>
+    <div class="digit-wrap" style="grid-template-columns:1fr 1fr 16px 1fr 1fr;">
+      <div class="wheel" id="xDialIntTens"></div>
+      <div class="wheel" id="xDialIntOnes"></div>
+      <div class="dot">.</div>
+      <div class="wheel" id="xDialDec1"></div>
+      <div class="wheel" id="xDialDec2"></div>
+      <div class="highlight"></div>
+    </div>
+    <div class="dial-actions">
+      <button type="button" id="xDialCancel">取消</button>
+      <button type="button" class="confirm" id="xDialConfirm">確認</button>
+    </div>
+  </div>
+</div>
+
 <script>
-/* ===== 你的原始邏輯（未動） ===== */
-const DEFAULT_X=2.50, DEFAULT_Y=1.40, SECOND_FLOOR=30; let KM_FEE=11.50;//12.142 12.01 11.50
+/* ===== 計算邏輯（未動） ===== */
+const DEFAULT_X=2.50, DEFAULT_Y=1.40, SECOND_FLOOR=30; let KM_FEE=11.50;
 function change(id,delta){const input=document.getElementById(id);let value=parseFloat(input.value)||0;if(id==="xVal"){value+=delta;if(value<2.50)value=2.50;}else{value+=delta;if(value<0)value=0;}input.value=value.toFixed(2);calc();}
 function showError(msg){document.getElementById('errorMsg').innerText=msg||'';}
 function calc(){
@@ -208,122 +317,166 @@ document.querySelectorAll('.inc-btn,.dec-btn').forEach(btn=>{
   btn.addEventListener('mousedown',start);btn.addEventListener('mouseup',stop);btn.addEventListener('mouseleave',stop);
 });
 
-/* ===== 共用：鎖背景卷動（行動裝置穩定） ===== */
-let bodyScrollY=0;
-function lockBodyScroll(){ bodyScrollY=window.scrollY||document.documentElement.scrollTop||0; document.body.style.position='fixed'; document.body.style.top=`-${bodyScrollY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; }
-function unlockBodyScroll(){ document.body.style.position=''; document.body.style.top=''; document.body.style.left=''; document.body.style.right=''; document.body.style.width=''; window.scrollTo(0, bodyScrollY); }
-
-/* ===== X PICKER：公里數（既有） ===== */
+/* ===== 單欄挑選器（原本） ===== */
 const MIN_X=2.50, MAX_X=15.00, STEP_X=0.01;
 const xPicker={ overlay:document.getElementById('xPickerOverlay'), wheel:document.getElementById('xPickerWheel'), list:document.getElementById('xPickerList'), btnOpen:document.getElementById('openXPicker'), btnCancel:document.getElementById('xPickerCancel'), btnConfirm:document.getElementById('xPickerConfirm'), now:document.getElementById('xPickerNow'), value:DEFAULT_X };
-
-function buildXList(){
-  if(xPicker.list.childElementCount>0) return;
-  const frag=document.createDocumentFragment();
-  for(let v=MIN_X; v<=MAX_X+1e-9; v+=STEP_X){
-    const li=document.createElement('li');
-    li.className='picker-item'; li.dataset.value=v.toFixed(2); li.textContent=v.toFixed(2)+' km';
-    li.addEventListener('click', ()=>{ setActiveX(parseFloat(li.dataset.value)); li.scrollIntoView({block:'center',behavior:'smooth'}); });
-    frag.appendChild(li);
-  }
-  xPicker.list.appendChild(frag);
-}
-function setActiveX(val){
-  const v=Math.min(MAX_X,Math.max(MIN_X,val));
-  xPicker.value=parseFloat(v.toFixed(2));
-  xPicker.now.textContent=xPicker.value.toFixed(2)+' km';
-  xPicker.list.querySelectorAll('.picker-item.active').forEach(el=>el.classList.remove('active'));
-  const target=xPicker.list.querySelector(`.picker-item[data-value="${xPicker.value.toFixed(2)}"]`);
-  if(target) target.classList.add('active');
-}
-function openXPicker(){
-  buildXList();
-  // 讀目前輸入框值（若 NaN 則用下限）
-  const curr = parseFloat(document.getElementById('xVal').value);
-  setActiveX(isNaN(curr) ? MIN_X : curr);
-
-  xPicker.overlay.style.display = 'flex';
-  lockBodyScroll();
-  document.addEventListener('keydown', keyNavX);
-
-  // ✅ 開啟時立即把目前值置中（無動畫 → 不會像自己滑動）
-  const target = xPicker.list.querySelector(`.picker-item[data-value="${xPicker.value.toFixed(2)}"]`);
-  if (target) target.scrollIntoView({ block: 'center', behavior: 'auto' });
-}
+function buildXList(){ if(xPicker.list.childElementCount>0) return; const frag=document.createDocumentFragment(); for(let v=MIN_X; v<=MAX_X+1e-9; v+=STEP_X){ const li=document.createElement('li'); li.className='picker-item'; li.dataset.value=v.toFixed(2); li.textContent=v.toFixed(2)+' km'; li.addEventListener('click', ()=>{ setActiveX(parseFloat(li.dataset.value)); li.scrollIntoView({block:'center',behavior:'smooth'}); }); frag.appendChild(li);} xPicker.list.appendChild(frag);}
+function setActiveX(val){ const v=Math.min(MAX_X,Math.max(MIN_X,val)); xPicker.value=parseFloat(v.toFixed(2)); xPicker.now.textContent=xPicker.value.toFixed(2)+' km'; xPicker.list.querySelectorAll('.picker-item.active').forEach(el=>el.classList.remove('active')); const target=xPicker.list.querySelector(`.picker-item[data-value="${xPicker.value.toFixed(2)}"]`); if(target) target.classList.add('active');}
+function openXPicker(){ buildXList(); const curr = parseFloat(document.getElementById('xVal').value); setActiveX(isNaN(curr) ? MIN_X : curr); xPicker.overlay.style.display = 'flex'; lockBodyScroll(); document.addEventListener('keydown', keyNavX); const target = xPicker.list.querySelector(`.picker-item[data-value="${xPicker.value.toFixed(2)}"]`); if (target) target.scrollIntoView({ block: 'center', behavior: 'auto' });}
 function closeXPicker(){ xPicker.overlay.style.display='none'; document.removeEventListener('keydown', keyNavX); unlockBodyScroll(); }
-function keyNavX(e){
-  if(xPicker.overlay.style.display!=='flex') return;
-  if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); setActiveX(xPicker.value+(e.key==='ArrowUp'?-STEP_X:STEP_X)); const t=xPicker.list.querySelector(`.picker-item[data-value="${xPicker.value.toFixed(2)}"]`); if(t) t.scrollIntoView({block:'center',behavior:'auto'}); }
-  else if(e.key==='Enter'){ confirmXPicker(); } else if(e.key==='Escape'){ closeXPicker(); }
-}
+function keyNavX(e){ if(xPicker.overlay.style.display!=='flex') return; if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); setActiveX(xPicker.value+(e.key==='ArrowUp'?-STEP_X:STEP_X)); const t=xPicker.list.querySelector(`.picker-item[data-value="${xPicker.value.toFixed(2)}"]`); if(t) t.scrollIntoView({block:'center',behavior:'auto'}); } else if(e.key==='Enter'){ confirmXPicker(); } else if(e.key==='Escape'){ closeXPicker(); }}
 function confirmXPicker(){ const input=document.getElementById('xVal'); input.value=xPicker.value.toFixed(2); closeXPicker(); calc(); }
 xPicker.btnOpen.addEventListener('click', openXPicker);
 xPicker.btnCancel.addEventListener('click', closeXPicker);
 xPicker.btnConfirm.addEventListener('click', confirmXPicker);
 xPicker.overlay.addEventListener('click', e=>{ if(e.target===xPicker.overlay) closeXPicker(); });
 
-/* ===== Y PICKER：倍率（★此處按你的需求調整範圍與步進） ===== */
-const MIN_Y=1.35, MAX_Y=6.99, STEP_Y=0.01;  // ← 1.35~6.99，0.01遞增
+const MIN_Y=1.35, MAX_Y=6.99, STEP_Y=0.01;
 const yPicker={ overlay:document.getElementById('yPickerOverlay'), wheel:document.getElementById('yPickerWheel'), list:document.getElementById('yPickerList'), btnOpen:document.getElementById('openYPicker'), btnCancel:document.getElementById('yPickerCancel'), btnConfirm:document.getElementById('yPickerConfirm'), now:document.getElementById('yPickerNow'), value:DEFAULT_Y };
+function buildYList(){ if(yPicker.list.childElementCount>0) return; const frag=document.createDocumentFragment(); for(let v=MIN_Y; v<=MAX_Y+1e-9; v+=STEP_Y){ const fixed = v.toFixed(2); const li=document.createElement('li'); li.className='picker-item'; li.dataset.value=fixed; li.textContent=fixed+' ×'; li.addEventListener('click', ()=>{ setActiveY(parseFloat(li.dataset.value)); li.scrollIntoView({block:'center',behavior:'smooth'}); }); frag.appendChild(li);} yPicker.list.appendChild(frag);}
+function setActiveY(val){ const v=Math.min(MAX_Y,Math.max(MIN_Y,val)); yPicker.value=parseFloat(v.toFixed(2)); yPicker.now.textContent=yPicker.value.toFixed(2)+' ×'; yPicker.list.querySelectorAll('.picker-item.active').forEach(el=>el.classList.remove('active')); const target=yPicker.list.querySelector(`.picker-item[data-value="${yPicker.value.toFixed(2)}"]`); if(target) target.classList.add('active');}
+function openYPicker(){ buildYList(); const curr = parseFloat(document.getElementById('yVal').value); setActiveY(isNaN(curr) ? DEFAULT_Y : curr); yPicker.overlay.style.display = 'flex'; lockBodyScroll(); const target = yPicker.list.querySelector(`.picker-item[data-value="${yPicker.value.toFixed(2)}"]`); if (target) target.scrollIntoView({ block: 'center', behavior: 'auto' });}
+function closeYPicker(){ yPicker.overlay.style.display='none'; unlockBodyScroll(); }
+function keyNavY(e){}
+function confirmYPicker(){}
 
-function buildYList(){
-  if(yPicker.list.childElementCount>0) return;
-  const frag=document.createDocumentFragment();
-  for(let v=MIN_Y; v<=MAX_Y+1e-9; v+=STEP_Y){
-    const fixed = v.toFixed(2);
-    const li=document.createElement('li');
-    li.className='picker-item'; li.dataset.value=fixed; li.textContent=fixed+' ×';
-    li.addEventListener('click', ()=>{ setActiveY(parseFloat(li.dataset.value)); li.scrollIntoView({block:'center',behavior:'smooth'}); });
-    frag.appendChild(li);
-  }
-  yPicker.list.appendChild(frag);
-}
-function setActiveY(val){
-  const v=Math.min(MAX_Y,Math.max(MIN_Y,val));
-  yPicker.value=parseFloat(v.toFixed(2));
-  yPicker.now.textContent=yPicker.value.toFixed(2)+' ×';
-  yPicker.list.querySelectorAll('.picker-item.active').forEach(el=>el.classList.remove('active'));
-  const target=yPicker.list.querySelector(`.picker-item[data-value="${yPicker.value.toFixed(2)}"]`);
-  if(target) target.classList.add('active');
-}
-function openYPicker(){
-  buildYList();
-  // 讀目前輸入框值（若 NaN 則用預設 1.40），setActiveY 內會自動夾在 1.35~6.99 範圍
-  const curr = parseFloat(document.getElementById('yVal').value);
-  setActiveY(isNaN(curr) ? DEFAULT_Y : curr);
-
-  yPicker.overlay.style.display = 'flex';
+/* ======== 多欄：倍率 3 格 ======== */
+const yDial = {
+  overlay: document.getElementById('yDialOverlay'),
+  now: document.getElementById('yDialNow'),
+  btnOpen: document.getElementById('openYPicker'),
+  btnCancel: document.getElementById('yDialCancel'),
+  btnConfirm: document.getElementById('yDialConfirm'),
+  wInt: document.getElementById('dialInt'),
+  wD1: document.getElementById('dialD1'),
+  wD2: document.getElementById('dialD2'),
+  ITEM_H: 48,
+  stopTimer: null
+};
+function buildWheelDial(w){ if(w.dataset.ready) return; w.innerHTML = `<div class="spacer"></div>`; for(let i=0;i<=9;i++){ const d=document.createElement('div'); d.className='digit'; d.textContent=i; w.appendChild(d); } w.insertAdjacentHTML('beforeend', `<div class="spacer"></div>`); w.dataset.ready='1';}
+function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
+function setSpacerHeightsDial(w){ const spacerH = Math.max(0, (w.clientHeight - yDial.ITEM_H) / 2); const f=w.firstElementChild, l=w.lastElementChild; if(f?.classList.contains('spacer')) f.style.height = `${spacerH}px`; if(l?.classList.contains('spacer')) l.style.height = `${spacerH}px`; return spacerH;}
+function currentDigitDial(w){ const h=yDial.ITEM_H, vh=w.clientHeight, sp=Math.max(0,(vh-h)/2); const center=w.scrollTop+vh/2; const idx=Math.round((center-(sp+h/2))/h); return clamp(idx,0,9);}
+function snapToDigitDial(w,d,smooth=true){ const h=yDial.ITEM_H, vh=w.clientHeight, sp=Math.max(0,(vh-h)/2); const top=(sp+d*h+h/2)-(vh/2); w.scrollTo({top,behavior:smooth?'smooth':'auto'});}
+function markCenterDial(w){ const idx=currentDigitDial(w); Array.from(w.querySelectorAll('.digit')).forEach((el,i)=>el.classList.toggle('center',i===idx));}
+function readYValue(){ [yDial.wInt,yDial.wD1,yDial.wD2].forEach(markCenterDial); const i=currentDigitDial(yDial.wInt), a=currentDigitDial(yDial.wD1), b=currentDigitDial(yDial.wD2); let val=parseFloat(`${i}.${a}${b}`); val=clamp(val, MIN_Y, MAX_Y); yDial.now.textContent=val.toFixed(2); return val;}
+function onYWheelScroll(){ readYValue(); clearTimeout(yDial.stopTimer); yDial.stopTimer=setTimeout(()=>{ const i=currentDigitDial(yDial.wInt), a=currentDigitDial(yDial.wD1), b=currentDigitDial(yDial.wD2); snapToDigitDial(yDial.wInt,i); snapToDigitDial(yDial.wD1,a); snapToDigitDial(yDial.wD2,b); setTimeout(()=>{ [yDial.wInt,yDial.wD1,yDial.wD2].forEach(markCenterDial); },160); },120);}
+function setYWheelsFrom(val){ const safe=isNaN(val)?DEFAULT_Y:clamp(val, MIN_Y, MAX_Y); const i=Math.floor(safe), a=Math.floor((safe*10)%10), b=Math.floor((safe*100)%10); snapToDigitDial(yDial.wInt,i,false); snapToDigitDial(yDial.wD1,a,false); snapToDigitDial(yDial.wD2,b,false); [yDial.wInt,yDial.wD1,yDial.wD2].forEach(markCenterDial); yDial.now.textContent=safe.toFixed(2);}
+function openYDial(){
+  [yDial.wInt,yDial.wD1,yDial.wD2].forEach(buildWheelDial);
+  yDial.overlay.style.display='flex';
+  requestAnimationFrame(()=>{
+    [yDial.wInt,yDial.wD1,yDial.wD2].forEach(setSpacerHeightsDial);
+    const curr=parseFloat(document.getElementById('yVal').value||DEFAULT_Y);
+    setYWheelsFrom(curr);
+    [yDial.wInt,yDial.wD1,yDial.wD2].forEach(w=>{
+      w.removeEventListener('scroll', onYWheelScroll);
+      w.addEventListener('scroll', onYWheelScroll, {passive:true});
+      w.addEventListener('touchend', ()=>onYWheelScroll(), {passive:true});
+      w.addEventListener('mouseup',   ()=>onYWheelScroll(), {passive:true});
+    });
+    // 喚醒 iOS 慣性
+    [yDial.wInt,yDial.wD1,yDial.wD2].forEach(w=>wakeWheel(w));
+  });
   lockBodyScroll();
-  document.addEventListener('keydown', keyNavY);
-
-  // ✅ 開啟時立即把目前值置中（無動畫）
-  const target = yPicker.list.querySelector(`.picker-item[data-value="${yPicker.value.toFixed(2)}"]`);
-  if (target) target.scrollIntoView({ block: 'center', behavior: 'auto' });
 }
-function closeYPicker(){ yPicker.overlay.style.display='none'; document.removeEventListener('keydown', keyNavY); unlockBodyScroll(); }
-function keyNavY(e){
-  if(yPicker.overlay.style.display!=='flex') return;
-  if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); setActiveY(yPicker.value+(e.key==='ArrowUp'?-STEP_Y:STEP_Y)); const t=yPicker.list.querySelector(`.picker-item[data-value="${yPicker.value.toFixed(2)}"]`); if(t) t.scrollIntoView({block:'center',behavior:'auto'}); }
-  else if(e.key==='Enter'){ confirmYPicker(); } else if(e.key==='Escape'){ closeYPicker(); }
-}
-function confirmYPicker(){ const input=document.getElementById('yVal'); input.value=yPicker.value.toFixed(2); closeYPicker(); calc(); }
-yPicker.btnOpen.addEventListener('click', openYPicker);
-yPicker.btnCancel.addEventListener('click', closeYPicker);
-yPicker.btnConfirm.addEventListener('click', confirmYPicker);
-yPicker.overlay.addEventListener('click', e=>{ if(e.target===yPicker.overlay) closeYPicker(); });
+function closeYDial(){ yDial.overlay.style.display='none'; unlockBodyScroll(); }
+function confirmYDial(){ const v=readYValue(); document.getElementById('yVal').value=v.toFixed(2); closeYDial(); calc(); }
 
-/* 初始 */
-window.onload=function(){ resetValues(); };
+/* ======== 多欄：公里 4 格 ======== */
+const MIN_X_DIAL = 2.50, MAX_X_DIAL = 99.99;
+const xDial = {
+  overlay: document.getElementById('xDialOverlay'),
+  now: document.getElementById('xDialNow'),
+  btnOpen: document.getElementById('openXPicker'),
+  btnCancel: document.getElementById('xDialCancel'),
+  btnConfirm: document.getElementById('xDialConfirm'),
+  wTens: document.getElementById('xDialIntTens'),
+  wOnes: document.getElementById('xDialIntOnes'),
+  wD1:   document.getElementById('xDialDec1'),
+  wD2:   document.getElementById('xDialDec2'),
+  ITEM_H: 48,
+  stopTimer: null
+};
+function buildWheelX(w){ if(w.dataset.ready) return; w.innerHTML = `<div class="spacer"></div>`; for(let i=0;i<=9;i++){ const d=document.createElement('div'); d.className='digit'; d.textContent=i; w.appendChild(d); } w.insertAdjacentHTML('beforeend', `<div class="spacer"></div>`); w.dataset.ready='1';}
+function setSpacerHeightsX(w){ const itemH=xDial.ITEM_H, viewH=w.clientHeight; const spacerH=Math.max(0,(viewH-itemH)/2); const f=w.firstElementChild, l=w.lastElementChild; if(f?.classList.contains('spacer')) f.style.height=`${spacerH}px`; if(l?.classList.contains('spacer')) l.style.height=`${spacerH}px`; return spacerH;}
+function currentDigitX(w){ const h=xDial.ITEM_H, vh=w.clientHeight, sp=Math.max(0,(vh-h)/2); const center=w.scrollTop+vh/2; const idx=Math.round((center-(sp+h/2))/h); return Math.min(9, Math.max(0, idx));}
+function snapToDigitX(w,d,smooth=true){ const h=xDial.ITEM_H, vh=w.clientHeight, sp=Math.max(0,(vh-h)/2); const top=(sp+d*h+h/2)-(vh/2); w.scrollTo({top,behavior:smooth?'smooth':'auto'});}
+function markCenterX(w){ const idx=currentDigitX(w); Array.from(w.querySelectorAll('.digit')).forEach((el,i)=>el.classList.toggle('center', i===idx));}
+function readXValue(){ [xDial.wTens,xDial.wOnes,xDial.wD1,xDial.wD2].forEach(markCenterX); const t=currentDigitX(xDial.wTens), o=currentDigitX(xDial.wOnes), a=currentDigitX(xDial.wD1), b=currentDigitX(xDial.wD2); let val=parseFloat(`${t}${o}.${a}${b}`); val=Math.min(MAX_X_DIAL, Math.max(MIN_X_DIAL, val)); xDial.now.textContent=val.toFixed(2); return val;}
+function onXWheelScroll(){ readXValue(); clearTimeout(xDial.stopTimer); xDial.stopTimer=setTimeout(()=>{ const t=currentDigitX(xDial.wTens), o=currentDigitX(xDial.wOnes), a=currentDigitX(xDial.wD1), b=currentDigitX(xDial.wD2); snapToDigitX(xDial.wTens,t); snapToDigitX(xDial.wOnes,o); snapToDigitX(xDial.wD1,a); snapToDigitX(xDial.wD2,b); setTimeout(()=>{ [xDial.wTens,xDial.wOnes,xDial.wD1,xDial.wD2].forEach(markCenterX); },160); },120);}
+function setXWheelsFrom(val){ const safe=isNaN(val)?MIN_X_DIAL:Math.min(MAX_X_DIAL, Math.max(0, val)); const iv=Math.floor(safe); const t=Math.floor(iv/10)%10, o=iv%10, a=Math.floor((safe*10)%10), b=Math.floor((safe*100)%10); snapToDigitX(xDial.wTens,t,false); snapToDigitX(xDial.wOnes,o,false); snapToDigitX(xDial.wD1,a,false); snapToDigitX(xDial.wD2,b,false); [xDial.wTens,xDial.wOnes,xDial.wD1,xDial.wD2].forEach(markCenterX); xDial.now.textContent=Math.min(MAX_X_DIAL, Math.max(MIN_X_DIAL, safe)).toFixed(2);}
+function openXDial(){
+  [xDial.wTens,xDial.wOnes,xDial.wD1,xDial.wD2].forEach(buildWheelX);
+  xDial.overlay.style.display='flex';
+  requestAnimationFrame(()=>{
+    [xDial.wTens,xDial.wOnes,xDial.wD1,xDial.wD2].forEach(setSpacerHeightsX);
+    const curr=parseFloat(document.getElementById('xVal').value||MIN_X_DIAL);
+    setXWheelsFrom(curr);
+    [xDial.wTens,xDial.wOnes,xDial.wD1,xDial.wD2].forEach(w=>{
+      w.removeEventListener('scroll', onXWheelScroll);
+      w.addEventListener('scroll', onXWheelScroll, {passive:true});
+      w.addEventListener('touchend', ()=>onXWheelScroll(), {passive:true});
+      w.addEventListener('mouseup',   ()=>onXWheelScroll(), {passive:true});
+    });
+    // 喚醒 iOS 慣性
+    [xDial.wTens,xDial.wOnes,xDial.wD1,xDial.wD2].forEach(w=>wakeWheel(w));
+  });
+  lockBodyScroll();
+}
+function closeXDial(){ xDial.overlay.style.display='none'; unlockBodyScroll(); }
+function confirmXDial(){ const v=readXValue(); const finalV=Math.min(MAX_X_DIAL, Math.max(MIN_X_DIAL, v)); const input=document.getElementById('xVal'); input.value=finalV.toFixed(2); closeXDial(); calc(); }
+
+/* ===== 背景鎖定 ===== */
+let bodyScrollY=0;
+function lockBodyScroll(){ bodyScrollY=window.scrollY||document.documentElement.scrollTop||0; document.body.style.position='fixed'; document.body.style.top=`-${bodyScrollY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; }
+function unlockBodyScroll(){ document.body.style.position=''; document.body.style.top=''; document.body.style.left=''; document.body.style.right=''; document.body.style.width=''; window.scrollTo(0, bodyScrollY); }
+
+/* ===== 遮罩手勢修補：在非 .wheel 上滑動時阻斷事件鏈 ===== */
+function wireDialOverlay(overlayId, closeFn){
+  const ov = document.getElementById(overlayId);
+  if(!ov) return;
+  ov.addEventListener('touchmove', (e)=>{
+    const path = e.composedPath ? e.composedPath() : [];
+    const onWheel = path && path.some && path.some(node => node && node.classList && node.classList.contains('wheel'));
+    if(!onWheel){ e.preventDefault(); }
+  }, {passive:false, capture:true});
+  ov.addEventListener('click', (e)=>{ if(e.target === ov) closeFn(); }, {passive:true});
+  document.addEventListener('keydown', (e)=>{ if(ov.style.display==='flex' && e.key === 'Escape') closeFn(); });
+}
+wireDialOverlay('yDialOverlay', closeYDial);
+wireDialOverlay('xDialOverlay', closeXDial);
+
+/* ===== 喚醒 iOS 慣性（偶發睡著時） ===== */
+function wakeWheel(w){
+  const prev = w.style.webkitOverflowScrolling;
+  w.style.webkitOverflowScrolling = 'auto';
+  void w.offsetHeight;
+  w.style.webkitOverflowScrolling = prev || 'touch';
+}
+
+/* ===== 把 ⭥ 綁到「多欄滑輪」 ===== */
+try{ xPicker.btnOpen.removeEventListener('click', openXPicker); }catch(e){}
+try{ yPicker.btnOpen.removeEventListener('click', openYPicker); }catch(e){}
+document.getElementById('openXPicker').addEventListener('click', openXDial);
+document.getElementById('xDialCancel').addEventListener('click', closeXDial);
+document.getElementById('xDialConfirm').addEventListener('click', confirmXDial);
+document.getElementById('openYPicker').addEventListener('click', openYDial);
+document.getElementById('yDialCancel').addEventListener('click', closeYDial);
+document.getElementById('yDialConfirm').addEventListener('click', confirmYDial);
+
+/* ===== 初始 ===== */
+window.addEventListener("load",function(){ resetValues(); calc(); });
 </script>
 
-<!-- === 你的取單率區塊（未動） === -->
+<!-- === 取單率區塊（未動，修正一個小 typo） === -->
 <div class="order-block" style="background:#1e1e1e; padding:10px; border-radius:12px;">
   <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #555; padding:8px 0;">
     <label for="completed" style="font-size:14px; color:#eee;">過往記錄完成訂單件數</label>
     <input type="number" id="completed" value=""
            style="width:60px; text-align:right; font-size:14px; background:#2a2a2a; color:#eee; border:1px solid #555; border-radius:6px; padding:4px 6px;">
   </div>
-  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #555; padding:8px 0;">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #555; padding:8px 0%;">
     <label for="takeRate" style="font-size:14px; color:#eee;">區間取單率</label>
     <div style="display:flex; align-items:center; gap:3px;">
       <input type="number" id="takeRate" value=""
@@ -366,9 +519,6 @@ function resetOrders(){
   document.getElementById('generatedOrdersResult').innerText="";
   document.getElementById('extraInfo').innerText="";
 }
-document.getElementById('completed').addEventListener('input',calcOrders);
-document.getElementById('takeRate').addEventListener('input',calcOrders);
-window.addEventListener("load",function(){ resetValues(); resetOrders(); calc(); });
 </script>
 
 <div style="text-align:center; margin-top:30px; font-size:14px; color:#fc0303; line-height:1.8; border-top:1px solid #ccc; padding-top:10px;">
@@ -377,6 +527,247 @@ window.addEventListener("load",function(){ resetValues(); resetOrders(); calc();
   ※ 以上僅供參考※<br>
   2025年10月21日 19:57 <br>
 </div>
+
+<!-- ======================== -->
+<!-- === 追加樣式（不改舊） === -->
+<!-- ======================== -->
+<style>
+/* 單欄清單（可選）層級視覺：想要也有中心放大效果就保留，若不需要可刪掉這段 */
+.picker-wheel .picker-item{
+  font-size: 18px;
+  opacity: .35;
+  transform: scale(.90);
+  transition: transform .18s ease, opacity .18s ease, font-size .18s ease;
+}
+.picker-wheel .picker-item.near{
+  font-size: 19px;
+  opacity: .65;
+  transform: scale(.96);
+}
+.picker-wheel .picker-item.far{
+  font-size: 17px;
+  opacity: .28;
+  transform: scale(.88);
+}
+.picker-wheel .picker-item.center{
+  font-size: 22px;
+  font-weight: 800;
+  opacity: 1;
+  color: #fff;
+  transform: scale(1.04);
+}
+</style>
+
+<!-- ======================= -->
+<!-- === 追加腳本（不改舊） === -->
+<!-- ======================= -->
+<script>
+/* ========= 追加：只做「視覺分層」的更新，不改你的捲動/吸附邏輯 ========= */
+
+/** 計算 wheel 視覺中心最接近哪個 item，並套 center/near/far class */
+function applyCenterClasses(wheel, itemSelector){
+  if(!wheel) return;
+  const items = wheel.querySelectorAll(itemSelector);
+  if(!items.length) return;
+
+  const mid = wheel.scrollTop + wheel.clientHeight / 2;
+  let best = 0, bestDist = Infinity;
+
+  items.forEach((el, i) => {
+    const c = el.offsetTop + el.offsetHeight / 2;
+    const d = Math.abs(c - mid);
+    if(d < bestDist){ bestDist = d; best = i; }
+  });
+
+  items.forEach((el, i) => {
+    el.classList.remove('center','near','far');
+    const dist = Math.abs(i - best);
+    if(dist === 0) el.classList.add('center');
+    else if(dist === 1) el.classList.add('near');
+    else el.classList.add('far');
+  });
+}
+
+/** 綁定某個 wheel 的視覺更新（避免重複綁定：用 data 標記） */
+function bindVisualUpdate(wheel, itemSelector){
+  if(!wheel || wheel.dataset.visualBound) return;
+  wheel.dataset.visualBound = '1';
+
+  const update = () => applyCenterClasses(wheel, itemSelector);
+
+  // 初始跑一次（等一幀，確保尺寸定位OK）
+  requestAnimationFrame(update);
+
+  // 滾動時即時更新（純視覺、不卡捲動）
+  wheel.addEventListener('scroll', update, { passive: true });
+
+  // 放手也補一次
+  wheel.addEventListener('touchend', update, { passive: true });
+  wheel.addEventListener('mouseup', update, { passive: true });
+
+  // 視窗尺寸變化，中心會變，補一次
+  window.addEventListener('resize', () => requestAnimationFrame(update), { passive: true });
+}
+
+/** 啟用所有輪子（多欄 & 單欄） */
+function enableAllWheelsVisual(){
+  // 多欄（倍率三欄）
+  ['dialInt','dialD1','dialD2'].forEach(id=>{
+    const w = document.getElementById(id);
+    bindVisualUpdate(w, '.digit');
+  });
+  // 多欄（公里四欄）
+  ['xDialIntTens','xDialIntOnes','xDialDec1','xDialDec2'].forEach(id=>{
+    const w = document.getElementById(id);
+    bindVisualUpdate(w, '.digit');
+  });
+  // 單欄清單（可選）
+  bindVisualUpdate(document.getElementById('xPickerWheel'), '.picker-item');
+  bindVisualUpdate(document.getElementById('yPickerWheel'), '.picker-item');
+}
+
+/* ---- 在「開啟」時保證已套用（包裝你的開啟函式，不改其內容） ---- */
+(function patchOpeners(){
+  // 多欄：倍率
+  const _openYDial = window.openYDial;
+  if (typeof _openYDial === 'function') {
+    window.openYDial = function(){
+      _openYDial.apply(this, arguments);
+      // 等 build + scrollTo 完成後再做一次視覺分層
+      setTimeout(() => {
+        ['dialInt','dialD1','dialD2'].forEach(id=>{
+          const w = document.getElementById(id);
+          bindVisualUpdate(w, '.digit');
+          // 立即套一次，避免剛開啟會沒有層級
+          applyCenterClasses(w, '.digit');
+        });
+      }, 0);
+    };
+  }
+
+  // 多欄：公里
+  const _openXDial = window.openXDial;
+  if (typeof _openXDial === 'function') {
+    window.openXDial = function(){
+      _openXDial.apply(this, arguments);
+      setTimeout(() => {
+        ['xDialIntTens','xDialIntOnes','xDialDec1','xDialDec2'].forEach(id=>{
+          const w = document.getElementById(id);
+          bindVisualUpdate(w, '.digit');
+          applyCenterClasses(w, '.digit');
+        });
+      }, 0);
+    };
+  }
+
+  // 單欄（如果你也想讓清單有層級視覺）
+  const _openXPicker = window.openXPicker;
+  if (typeof _openXPicker === 'function') {
+    window.openXPicker = function(){
+      _openXPicker.apply(this, arguments);
+      setTimeout(() => {
+        const w = document.getElementById('xPickerWheel');
+        bindVisualUpdate(w, '.picker-item');
+        applyCenterClasses(w, '.picker-item');
+      }, 0);
+    };
+  }
+  const _openYPicker = window.openYPicker;
+  if (typeof _openYPicker === 'function') {
+    window.openYPicker = function(){
+      _openYPicker.apply(this, arguments);
+      setTimeout(() => {
+        const w = document.getElementById('yPickerWheel');
+        bindVisualUpdate(w, '.picker-item');
+        applyCenterClasses(w, '.picker-item');
+      }, 0);
+    };
+  }
+})();
+
+/* 首次載入也跑一次（若頁面上輪子已經在 DOM） */
+document.addEventListener('DOMContentLoaded', enableAllWheelsVisual);
+</script>
+<script>
+/* 追加修復：幫取單率區塊補上事件監聽與初始化（不改動原本函式） */
+(function () {
+  var completed = document.getElementById('completed');
+  var takeRate  = document.getElementById('takeRate');
+
+  if (completed && takeRate && typeof window.calcOrders === 'function') {
+    // 避免重複綁定
+    completed.removeEventListener('input', calcOrders);
+    takeRate.removeEventListener('input', calcOrders);
+
+    completed.addEventListener('input', calcOrders);
+    takeRate.addEventListener('input',  calcOrders);
+
+    // 載入後先跑一次，讓畫面有值就更新
+    calcOrders();
+  }
+})();
+</script>
+<script>
+/* === 追加補丁：滑鼠滾輪一格對一格（只作用於 .dial 裡的數位滑輪） === */
+(function(){
+  // 判斷是倍率(wheel屬於 yDial)還是公里(xDial)的輪子
+  function isXWheel(el){ return el && /^xDial/.test(el.id); }
+
+  // 取目前索引（用你既有的 currentDigitDial / currentDigitX）
+  function getIdx(w){
+    try { return isXWheel(w) ? currentDigitX(w) : currentDigitDial(w); }
+    catch(e){ return 0; }
+  }
+
+  // 吸附到指定索引（用你既有的 snapToDigitDial / snapToDigitX）
+  function snapTo(w, idx){
+    try { 
+      if (isXWheel(w)) snapToDigitX(w, idx, true);
+      else             snapToDigitDial(w, idx, true);
+    } catch(e){}
+  }
+
+  // 更新中心樣式與讀值（用你既有的 markCenterX/markCenterDial + readXValue/readYValue）
+  function markAndRead(w){
+    try {
+      if (isXWheel(w)) {
+        markCenterX(w);
+        // 讓 UI 顯示立即同步
+        setTimeout(()=>{ try{ readXValue(); }catch(e){} }, 0);
+      } else {
+        markCenterDial(w);
+        setTimeout(()=>{ try{ readYValue(); }catch(e){} }, 0);
+      }
+    } catch(e){}
+  }
+
+  // 綁定到所有 .dial .wheel（倍率3欄 + 公里4欄）
+  var wheels = document.querySelectorAll('.dial .wheel');
+  wheels.forEach(function(w){
+    // 先移除可能既有的 wheel 綁定，避免重複
+    w.onwheel = null;
+
+    // 用非被動監聽，阻止預設滾動，改成一步一階
+    w.addEventListener('wheel', function(e){
+      // 僅處理垂直；阻止預設，避免一次滾動跨多項
+      e.preventDefault();
+
+      // 方向：向下(+1)、向上(-1)
+      var dir = (e.deltaY > 0) ? 1 : -1;
+
+      // 目前中心索引
+      var idx = getIdx(w);
+
+      // 每次只跳一格
+      var next = Math.min(9, Math.max(0, idx + dir));
+
+      // 吸附 + 更新視覺
+      snapTo(w, next);
+      markAndRead(w);
+    }, { passive: false });
+  });
+})();
+</script>
+
 </body>
 </html>
-
