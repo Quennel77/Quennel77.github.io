@@ -768,6 +768,75 @@ document.addEventListener('DOMContentLoaded', enableAllWheelsVisual);
   });
 })();
 </script>
+<style>
+/* 讓遮罩不要阻斷瀏覽器手勢，交給內層 .wheel 處理 */
+.dial-overlay { touch-action: auto !important; }
+</style>
+
+<script>
+/* === 修復 A：在 .wheel 捕獲階段攔住 touchmove，避免遮罩的 touchmove preventDefault 誤觸 === */
+(function(){
+  var wheelIds = ['dialInt','dialD1','dialD2','xDialIntTens','xDialIntOnes','xDialDec1','xDialDec2'];
+  function bindStopOverlayEat(){
+    wheelIds.forEach(function(id){
+      var w = document.getElementById(id);
+      if(!w || w.dataset.stopEatBound) return;
+      w.dataset.stopEatBound = '1';
+
+      // 1) 在 capture 階段先攔下來，讓事件不會傳到 overlay 的 touchmove 監聽器
+      w.addEventListener('touchmove', function(e){
+        e.stopPropagation();              // 避免傳到 overlay 造成 preventDefault
+        // 不呼叫 preventDefault，讓原生慣性滾動維持
+      }, {capture:true, passive:true});
+
+      // 2) 保險：touchstart 時取消任何程式性的平滑捲動，確保手指一碰就能立即拖動
+      w.addEventListener('touchstart', function(){
+        try {
+          // 強制打斷可能存在的平滑動畫（切回 auto 然後重設 scrollTop）
+          var top = w.scrollTop;
+          w.scrollTo({top: top, behavior: 'auto'});
+          // 喚醒 webkit 慣性
+          var prev = w.style.webkitOverflowScrolling;
+          w.style.webkitOverflowScrolling = 'auto';
+          void w.offsetHeight;
+          w.style.webkitOverflowScrolling = prev || 'touch';
+        } catch(e){}
+      }, {passive:true});
+
+      // 3) 放手後補一次視覺/數值（不影響你既有 rAF 或其他讀值）
+      w.addEventListener('touchend', function(){
+        try {
+          if (/^xDial/.test(w.id)) {
+            if (typeof markCenterX === 'function') markCenterX(w);
+            if (typeof readXValue   === 'function') setTimeout(readXValue, 0);
+          } else {
+            if (typeof markCenterDial === 'function') markCenterDial(w);
+            if (typeof readYValue     === 'function') setTimeout(readYValue, 0);
+          }
+        } catch(e){}
+      }, {passive:true});
+    });
+  }
+
+  // 對話框開啟時再綁一次（確保每次都有作用）
+  var _openYDial = window.openYDial;
+  if (typeof _openYDial === 'function') {
+    window.openYDial = function(){
+      _openYDial.apply(this, arguments);
+      setTimeout(bindStopOverlayEat, 0);
+    };
+  }
+  var _openXDial = window.openXDial;
+  if (typeof _openXDial === 'function') {
+    window.openXDial = function(){
+      _openXDial.apply(this, arguments);
+      setTimeout(bindStopOverlayEat, 0);
+    };
+  }
+  // 初次載入也綁一次（若輪子已在 DOM）
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(bindStopOverlayEat, 0); });
+})();
+</script>
 
 </body>
 </html>
