@@ -91,7 +91,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 .dot{ text-align:center;color:#ccc;font-size:26px;user-select:none; }
 .wheel{
   position:relative;height:220px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
-  background:#1c1c1c;border:1px solid #333;border-radius:10px;scroll-snap-type:y mandatory;
+  background:#1c1c1c;border:1px solid #333;border-radius:10px;scroll-snap-type: none;
   -webkit-overflow-scrolling:touch;
   touch-action:auto;           /* 使用原生慣性滾動 */
   will-change:scroll-position;
@@ -841,3 +841,4 @@ document.addEventListener('DOMContentLoaded', enableAllWheelsVisual);
 
 </body>
 </html>
+
