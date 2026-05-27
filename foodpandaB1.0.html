@@ -166,7 +166,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 
   <label>當時倍率：</label>
   <div class="input-group">
-    <input type="number" id="yVal" value="1.40" step="0.01" oninput="calc()">
+    <input type="number" id="yVal" value="1.35" step="0.01" oninput="calc()">
     <button class="picker-btn" id="openYPicker" aria-label="選擇倍率">⭥</button>
     <button class="inc-btn">+</button>
     <button class="dec-btn">-</button>
@@ -261,7 +261,7 @@ button:active,.calc-btn:active,.reset-btn:active{transform:none!important;scale:
 
 <script>
 /* ===== 計算邏輯（未動） ===== */
-const DEFAULT_X=2.50, DEFAULT_Y=1.40, SECOND_FLOOR=30; let KM_FEE=11.50;
+const DEFAULT_X=2.50, DEFAULT_Y=1.35, SECOND_FLOOR=30; let KM_FEE=11.50;
 function change(id,delta){const input=document.getElementById(id);let value=parseFloat(input.value)||0;if(id==="xVal"){value+=delta;if(value<2.50)value=2.50;}else{value+=delta;if(value<0)value=0;}input.value=value.toFixed(2);calc();}
 function showError(msg){document.getElementById('errorMsg').innerText=msg||'';}
 function calc(){
